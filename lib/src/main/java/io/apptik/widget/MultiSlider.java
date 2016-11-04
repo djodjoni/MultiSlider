@@ -26,7 +26,6 @@ import android.os.Build;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
@@ -1169,6 +1168,16 @@ public class MultiSlider extends View {
         return res;
     }
 
+    private Thumb getMostMovableThumb(MotionEvent event) {
+        if (exactTouched == null || exactTouched.size() < 1)
+            return null;
+        if (exactTouched.size() == 1) {
+            return exactTouched.getFirst();
+        } else {
+            return getMostMovable(exactTouched, event);
+        }
+    }
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (!mIsUserSeekable || !isEnabled()) {
@@ -1182,10 +1191,19 @@ public class MultiSlider extends View {
                 || event.getActionMasked() == MotionEvent.ACTION_POINTER_DOWN) {
             LinkedList<Thumb> closestOnes =
                     getClosestThumb((int) event.getX(pointerIdx));
+
+            if (isInScrollingContainer() && mDraggingThumbs.size() == 0 &&
+                    exactTouched != null && pointerIdx > 0) {
+                //we have been here before => we want to use the bar
+                Thumb prevThumb = exactTouched.getFirst();
+                onStartTrackingTouch(prevThumb);
+                exactTouched = null;
+            }
+
             if (closestOnes != null && !closestOnes.isEmpty()) {
                 if (closestOnes.size() == 1) {
                     currThumb = closestOnes.getFirst();
-                    if (isInScrollingContainer()) {
+                    if (isInScrollingContainer() && mDraggingThumbs.size() == 0) {
                         exactTouched = closestOnes;
                     }
                 } else {
@@ -1195,11 +1213,7 @@ public class MultiSlider extends View {
             }
         } else if (event.getActionMasked() == MotionEvent.ACTION_MOVE) {
             if (exactTouched != null && !exactTouched.isEmpty()) {
-                if (exactTouched.size() == 1) {
-                    currThumb = exactTouched.getFirst();
-                } else {
-                    currThumb = getMostMovable(exactTouched, event);
-                }
+                currThumb = getMostMovableThumb(event);
                 //check if move actually changed value
                 // if (currThumb == null) return false;
             } else if (mDraggingThumbs.size() > pointerIdx) {
@@ -1211,11 +1225,7 @@ public class MultiSlider extends View {
                 currThumb = mDraggingThumbs.get(pointerIdx);
             } //else we had a candidate but was never tracked
             else if (exactTouched != null && exactTouched.size() > 0) {
-                if (exactTouched.size() == 1) {
-                    currThumb = exactTouched.getFirst();
-                } else {
-                    currThumb = getMostMovable(exactTouched, event);
-                }
+                currThumb = getMostMovableThumb(event);
                 exactTouched = null;
             }
         }
@@ -1227,7 +1237,7 @@ public class MultiSlider extends View {
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
             case MotionEvent.ACTION_POINTER_DOWN:
-                if (isInScrollingContainer()) {
+                if (isInScrollingContainer() && mDraggingThumbs.size() == 0) {
                     mTouchDownX = event.getX(pointerIdx);
                 } else {
                     onStartTrackingTouch(currThumb);
@@ -1265,8 +1275,6 @@ public class MultiSlider extends View {
                     setThumbValue(currThumb, getValue(event, currThumb), true);
                     onStopTrackingTouch(currThumb);
                 } else {
-                    Log.e("APPTIK", "NULLL");
-
 //                    currThumb = getClosestThumb(newValue);
 //                    // Touch up when we never crossed the touch slop threshold should
 //                    // be interpreted as a tap-seek to that location.
