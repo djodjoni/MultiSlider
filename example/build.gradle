@@ -27,6 +27,7 @@ android {
 
 dependencies {
     compile project(':lib')
+    compile project(':holo-style')
     compile project(':mslider-espresso')
     compile project(':mslider-uiautomator')
     androidTestCompile 'junit:junit:4.12'
