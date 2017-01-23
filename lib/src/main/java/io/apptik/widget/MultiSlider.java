@@ -20,10 +20,17 @@ package io.apptik.widget;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.ColorInt;
+import android.support.annotation.ColorRes;
+import android.support.annotation.Dimension;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.annotation.Px;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.text.TextUtils;
@@ -35,6 +42,7 @@ import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityNodeProvider;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -144,6 +152,12 @@ public class MultiSlider extends View {
     private int defRangeColor = 0;
 
     private final TypedArray a;
+
+    private final Paint mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private boolean mShowTextAboveThumbs;
+    private @Px int mTextAboveThumbsSize;
+    private @ColorInt int mTextAboveThumbsColor;
+    private @Nullable TextFormatter mTextFormatter;
 
     /**
      * Thumb is the main object in MultiSlider.
@@ -470,6 +484,21 @@ public class MultiSlider extends View {
         int thumbOffset = a.getDimensionPixelOffset(io.apptik.widget.mslider.R.styleable
                 .MultiSlider_android_thumbOffset, defThumbDrawable.getIntrinsicWidth() / 2);
         setThumbOffset(thumbOffset);
+
+        mShowTextAboveThumbs = a.getBoolean(
+                io.apptik.widget.mslider.R.styleable.MultiSlider_valuesAboveThumbs, false);
+        if (mShowTextAboveThumbs) {
+            mTextAboveThumbsColor = a.getColor(
+                    io.apptik.widget.mslider.R.styleable.MultiSlider_textAboveThumbsColor, 0);
+            mTextAboveThumbsSize = (int) a.getDimension(
+                    io.apptik.widget.mslider.R.styleable.MultiSlider_textAboveThumbsSize, 0);
+            if (mTextAboveThumbsSize == 0) {
+                TextView textView = new TextView(getContext(), attrs);
+                mTextAboveThumbsSize = (int) textView.getTextSize();
+            }
+            setPadding(getPaddingLeft(), getPaddingTop() + mTextAboveThumbsSize,
+                    getPaddingRight(), getPaddingBottom());
+        }
 
         repositionThumbs();
 
@@ -1305,6 +1334,8 @@ public class MultiSlider extends View {
                 canvas.restore();
             }
         }
+
+        drawText(canvas);
     }
 
     @Override
@@ -1993,5 +2024,75 @@ public class MultiSlider extends View {
 
             return false;
         }
+    }
+
+    /**
+     * An utility interface allowing clients to format the text shown by the bar in any way they want.
+     */
+    public interface TextFormatter {
+        String formatValue(int value);
+    }
+
+    @SuppressWarnings("unused")
+    public void setTextFormatter(@NonNull TextFormatter textFormatter) {
+        mTextFormatter = textFormatter;
+    }
+
+    private void drawText(Canvas canvas) {
+        if (!mShowTextAboveThumbs)
+            return;
+
+        // draw the text if sliders have moved from default edges
+        mPaint.setStyle(Paint.Style.FILL);
+        mPaint.setAntiAlias(true);
+        mPaint.setTextSize(mTextAboveThumbsSize);
+        mPaint.setColor(mTextAboveThumbsColor);
+
+        final int thumb_count = mThumbs.size();
+        final int thumb_last_idx = thumb_count - 1;
+
+        for (int i = 0; i < thumb_count; ++i) {
+            final int value = mThumbs.get(i).getValue();
+            final String text = valueToString(value);
+            final float width = mPaint.measureText(text);
+            int pos_x = mThumbs.get(i).getThumb().getBounds().centerX();
+            pos_x -= width / 2;
+
+            if (i == 0)
+                pos_x = Math.max(0, pos_x);
+            if (i == thumb_last_idx)
+                pos_x = (int) Math.min(canvas.getWidth() - width, pos_x);
+
+            canvas.drawText(text,
+                    pos_x,
+                    mTextAboveThumbsSize,
+                    mPaint);
+        }
+    }
+
+    private String valueToString(int value) {
+        return (mTextFormatter != null)
+                ? mTextFormatter.formatValue(value)
+                : String.valueOf(value);
+    }
+
+    public void setTextAboveThumbsSize(@Px int pixels) {
+        mTextAboveThumbsSize = pixels;
+        invalidate();
+    }
+
+    public void setTextAboveThumbsSizeResource(@Dimension int resId) {
+        mTextAboveThumbsSize = (int)getResources().getDimension(resId);
+        invalidate();
+    }
+
+    public void setTextAboveThumbsColor(@ColorInt int color) {
+        mTextAboveThumbsColor = color;
+        invalidate();
+    }
+
+    public void setTextAboveThumbsColorResource(@ColorRes int resId) {
+        mTextAboveThumbsColor = ContextCompat.getColor(getContext(), resId);
+        invalidate();
     }
 }
