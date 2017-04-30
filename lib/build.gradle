@@ -9,6 +9,7 @@ android {
         targetSdkVersion rootProject.ext.compileSdkVersion
         versionCode 1
         versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
 
     compileOptions {
@@ -30,6 +31,10 @@ android {
 
 dependencies {
     compile rootProject.ext.supportDesign
+    androidTestCompile rootProject.ext.junit
+    androidTestCompile rootProject.ext.supportAnnotations
+    androidTestCompile rootProject.ext.supportTestRunner
+    androidTestCompile rootProject.ext.mockitoAndroid
 }
 
 apply from: 'https://raw.githubusercontent.com/djodjoni/gradle-mvn-push/master/gradle-mvn-push-android.gradle'

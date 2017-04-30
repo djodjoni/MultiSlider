@@ -43,6 +43,6 @@ ext {
     assertjCore1 = 'org.assertj:assertj-core:1.7.1'
     assertjCore2 = 'org.assertj:assertj-core:2.5.0'
     assertjCore3 = 'org.assertj:assertj-core:3.5.2'
-    mockitoCore = 'org.mockito:mockito-core:2.0.99-beta'
+    mockitoAndroid = 'org.mockito:mockito-android:2.7.22'
     junit = 'junit:junit:4.12'
 }

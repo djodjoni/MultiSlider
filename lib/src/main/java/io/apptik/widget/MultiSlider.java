@@ -312,18 +312,29 @@ public class MultiSlider extends View {
         }
 
         /**
+         * Manually set a thumb value, optionally moving neighbouring thumbs to make space.
+         *
+         * @param value
+         * @param pushNeighbours
+         * @return
+         */
+        public Thumb setValue(int value, boolean pushNeighbours) {
+            if(mThumbs.contains(this)) {
+                setThumbValue(this, value, pushNeighbours, false);
+            } else {
+                this.value = value;
+            }
+            return this;
+        }
+
+        /**
          * Manually set a thumb value
          *
          * @param value
          * @return
          */
         public Thumb setValue(int value) {
-            if(mThumbs.contains(this)) {
-                setThumbValue(this, value, false);
-            } else {
-                this.value = value;
-            }
-            return this;
+            return setValue(value, false);
         }
 
         public String getTag() {
@@ -788,7 +799,6 @@ public class MultiSlider extends View {
         if (thumb == null || thumb.getThumb() == null) return value;
         int currIdx = mThumbs.indexOf(thumb);
 
-
         if (mThumbs.size() > currIdx + 1 && value > mThumbs.get(currIdx + 1).getValue() -
                 mStepsThumbsApart * mStep) {
             value = mThumbs.get(currIdx + 1).getValue() - mStepsThumbsApart * mStep;
@@ -820,10 +830,15 @@ public class MultiSlider extends View {
      *
      * @param thumb    the thumb which value is going to be changed
      * @param value    the new value
-     * @param fromUser if the request is coming form the user or the client
+     * @param fromUser if the request is coming from the user or the client
      */
-    private synchronized void setThumbValue(Thumb thumb, int value, boolean fromUser) {
+    private synchronized void setThumbValue(Thumb thumb, int value, boolean pushNeighbours,
+                                            boolean fromUser) {
         if (thumb == null || thumb.getThumb() == null) return;
+
+        if (pushNeighbours) {
+            pushNeighbouringThumbs(thumb, value, fromUser);
+        }
 
         value = optThumbValue(thumb, value);
 
@@ -837,8 +852,23 @@ public class MultiSlider extends View {
         updateThumb(thumb, getWidth(), getHeight());
     }
 
-    private synchronized void setThumbValue(int thumb, int value, boolean fromUser) {
-        setThumbValue(mThumbs.get(thumb), value, fromUser);
+    private synchronized void setThumbValue(Thumb thumb, int value, boolean fromUser) {
+        setThumbValue(thumb, value, false, fromUser);
+    }
+
+    private void pushNeighbouringThumbs(Thumb thumb, int value, boolean fromUser) {
+        int currIdx = mThumbs.indexOf(thumb);
+
+        int maxLeftValue = value - mStepsThumbsApart * mStep;
+        int minRightValue = value + mStepsThumbsApart * mStep;
+
+        if (currIdx > 0 && mThumbs.get(currIdx - 1).getValue() > maxLeftValue) {
+            setThumbValue(mThumbs.get(currIdx - 1), maxLeftValue, true, fromUser);
+        }
+
+        if (currIdx + 1 < mThumbs.size() && mThumbs.get(currIdx + 1).getValue() < minRightValue) {
+            setThumbValue(mThumbs.get(currIdx + 1), minRightValue, true, fromUser);
+        }
     }
 
     private void updateTrackBounds(int w, int h) {
