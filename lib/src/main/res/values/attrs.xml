@@ -48,6 +48,15 @@
         <attr name="rangeColor" format="color" />
         <attr name="range1Color" format="color" />
         <attr name="range2Color" format="color" />
+
+        <!-- show the currently selected value above each thumb (defaults to true) -->
+        <attr name="valuesAboveThumbs" format="boolean"/>
+
+        <!-- the size of the text above thumbs -->
+        <attr name="textAboveThumbsSize" format="dimension"/>
+
+        <!-- the color of the text above thumbs -->
+        <attr name="textAboveThumbsColor" format="color"/>
     </declare-styleable>
     <!-- style reference -->
 <declare-styleable name="MultiSliderTheme">
