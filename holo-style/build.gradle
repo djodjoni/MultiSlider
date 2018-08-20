@@ -22,7 +22,7 @@ android {
 }
 
 dependencies {
-    implementation project(':lib')
+    implementation project(':MultiSliderLib')
 }
 
 
